@@ -95,6 +95,7 @@ int main(int argc, char *argv[]) {
     bool useGles = false;
     bool startTcpServer = false;
     int tcpServerPort = -1;
+    bool useFirst = false;
     {
         QCoreApplication parserApp(argc, argv);
         QCommandLineParser p;
@@ -106,11 +107,14 @@ int main(int argc, char *argv[]) {
         QCommandLineOption startTcpServerOption({"p", "listen"}, QCoreApplication::tr("Start TCP export server on port 4269"), "port");
         p.addOption(startTcpServerOption);
 
+        QCommandLineOption useFirstOption({"f", "usefirst"}, QCoreApplication::tr("Use the first device found. Don't show the device selection dialog."));
+        p.addOption(useFirstOption);
+
         p.process(parserApp);
         useGles = p.isSet(useGlesOption);
         startTcpServer = p.isSet(startTcpServerOption);
-
         tcpServerPort = p.value(startTcpServerOption).toInt();
+        useFirst = p.isSet(useFirstOption);
     }
 
     GlScope::fixOpenGLversion(useGles ? QSurfaceFormat::OpenGLES : QSurfaceFormat::OpenGL);
@@ -135,7 +139,14 @@ int main(int argc, char *argv[]) {
         SelectSupportedDevice().showLibUSBFailedDialogModel(error);
         return -1;
     }
-    std::unique_ptr<USBDevice> device = SelectSupportedDevice().showSelectDeviceModal(context);
+
+    std::unique_ptr<USBDevice> device;
+    if (useFirst) {
+        device = SelectSupportedDevice().firstDeviceFound(context);
+    }
+    else {
+        device = SelectSupportedDevice().showSelectDeviceModal(context);
+    }
 
     QString errorMessage;
     if (device == nullptr || !device->connectDevice(errorMessage)) {

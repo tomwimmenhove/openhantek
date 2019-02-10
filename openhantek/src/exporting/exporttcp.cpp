@@ -83,8 +83,6 @@ bool ExporterTcp::samples(const std::shared_ptr<PPresult> data) {
         out.flush();
 
         emit newData(connection, block);
-        //if (connection->isWritable())
-            //connection->write(block);
     }
 
     return true;

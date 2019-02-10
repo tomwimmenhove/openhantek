@@ -100,6 +100,21 @@ std::unique_ptr<USBDevice> SelectSupportedDevice::showSelectDeviceModal(libusb_c
     return findDevices->takeDevice(selectedDevice);
 }
 
+std::unique_ptr<USBDevice> SelectSupportedDevice::firstDeviceFound(libusb_context* context)
+{
+    std::unique_ptr<FindDevices> findDevices = std::unique_ptr<FindDevices>(new FindDevices(context));
+    if (!findDevices->updateDeviceList()) {
+        return nullptr;
+    }
+
+    const FindDevices::DeviceList* list = findDevices->getDevices();
+    if (list->size()) {
+        return findDevices->takeDevice(list->begin()->first);
+    }
+
+    return nullptr;
+}
+
 void SelectSupportedDevice::showLibUSBFailedDialogModel(int error)
 {
     ui->buttonBox->button(QDialogButtonBox::Ok)->setEnabled(false);

@@ -26,6 +26,7 @@ class SelectSupportedDevice : public QDialog
 public:
     explicit SelectSupportedDevice(QWidget *parent = 0);
     std::unique_ptr<USBDevice> showSelectDeviceModal(libusb_context *context);
+    std::unique_ptr<USBDevice> firstDeviceFound(libusb_context *context);
     void showLibUSBFailedDialogModel(int error);
 private:
     void updateDeviceList();
