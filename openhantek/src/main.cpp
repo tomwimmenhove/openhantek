@@ -181,17 +181,11 @@ int main(int argc, char *argv[]) {
     exportRegistry.registerExporter(&exportImage);
     exportRegistry.registerExporter(&exportPrint);
 
-
-    ExporterTcp exportTcp(1242);
-    exportRegistry.registerExporter(&exportTcp);
-    exportRegistry.setExporterEnabled(&exportTcp, true);
-
-//    if (startTcpServer)
-//    {
-//        ExporterTcp* exportTcp = new ExporterTcp(tcpServerPort);
-//        exportRegistry.registerExporter(exportTcp);
-//        exportRegistry.setExporterEnabled(exportTcp, true);
-//    }
+    if (startTcpServer) {
+        ExporterTcp* exportTcp = new ExporterTcp(tcpServerPort);
+        exportRegistry.registerExporter(exportTcp);
+        exportRegistry.setExporterEnabled(exportTcp, true);
+    }
 
     //////// Create post processing objects ////////
     QThread postProcessingThread;

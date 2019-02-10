@@ -39,5 +39,5 @@ private:
     QList<QTcpSocket*> connections;
 
     std::vector<double> lastSampleInterval;
-    std::vector<int> lastSampleSize;
+    std::vector<size_t> lastSampleSize;
 };

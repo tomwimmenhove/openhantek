@@ -14,8 +14,7 @@
 ExporterTcp::ExporterTcp(int port) {
     tcpServer = new QTcpServer();
 
-    if (!tcpServer->listen(QHostAddress::Any, port))
-    {
+    if (!tcpServer->listen(QHostAddress::Any, port)) {
         qCritical() << "Unable to start TCP server!";
         return;
     }
@@ -35,17 +34,14 @@ QString ExporterTcp::name() { return QCoreApplication::tr("Export TCP"); }
 ExporterInterface::Type ExporterTcp::type() { return Type::SnapshotExport; }
 
 bool ExporterTcp::samples(const std::shared_ptr<PPresult> data) {
-    for(QTcpSocket* connection: connections)
-    {
+    for(QTcpSocket* connection: connections) {
         QByteArray block;
         QTextStream out(&block, QIODevice::WriteOnly);
 
-        if (changes(data))
-        {
+        if (changes(data)) {
             out << "#timestamp,";
 
-            for (ChannelID channel = 0; channel < data->channelCount(); channel++)
-            {
+            for (ChannelID channel = 0; channel < data->channelCount(); channel++) {
                 size_t numChanSamps = data->data(channel)->voltage.sample.size();
                 if (!numChanSamps) continue;
                 QString chanName = registry->settings->scope.voltage[channel].name;
@@ -66,15 +62,13 @@ bool ExporterTcp::samples(const std::shared_ptr<PPresult> data) {
         out << (timestamp_ms / 1000) << '.'
             << QString("%1").arg((timestamp_ms % 1000), 3, 10, QChar('0')) << ',';
 
-        for (ChannelID channel = 0; channel < data->channelCount(); channel++)
-        {
+        for (ChannelID channel = 0; channel < data->channelCount(); channel++) {
             const DataChannel* chanData = data->data(channel);
             size_t numChanSamps = chanData->voltage.sample.size();
             if (!numChanSamps) continue;
 
             out << (1.0 / chanData->voltage.interval) << ',';
-            for (size_t sample = 0; sample < numChanSamps ; sample++)
-            {
+            for (size_t sample = 0; sample < numChanSamps ; sample++) {
                 out << chanData->voltage.sample[sample] << ',';
             }
         }
@@ -90,16 +84,15 @@ bool ExporterTcp::samples(const std::shared_ptr<PPresult> data) {
 
 void ExporterTcp::onNewData(QTcpSocket* connection, QByteArray data)
 {
-    if (connection->isWritable())
+    if (connection->isWritable()) {
         connection->write(data);
+    }
 }
 
 bool ExporterTcp::changes(const std::shared_ptr<PPresult> data)
 {
-    if (!lastSampleSize.size())
-    {
-        for (ChannelID channel = 0; channel < data->channelCount(); channel++)
-        {
+    if (!lastSampleSize.size()) {
+        for (ChannelID channel = 0; channel < data->channelCount(); channel++) {
             const DataChannel* chanData = data->data(channel);
             size_t numChanSamps = chanData->voltage.sample.size();
             if (!numChanSamps) continue;
@@ -113,17 +106,14 @@ bool ExporterTcp::changes(const std::shared_ptr<PPresult> data)
 
     bool changes = false;
 
-    for (ChannelID channel = 0; channel < data->channelCount(); channel++)
-    {
+    for (ChannelID channel = 0; channel < data->channelCount(); channel++) {
         const DataChannel* chanData = data->data(channel);
 
-        if (lastSampleSize[channel] != chanData->voltage.sample.size())
-        {
+        if (lastSampleSize[channel] != chanData->voltage.sample.size()) {
             lastSampleSize[channel] = chanData->voltage.sample.size();
             changes = true;
         }
-        if (lastSampleInterval[channel] != chanData->voltage.interval)
-        {
+        if (lastSampleInterval[channel] != chanData->voltage.interval) {
             lastSampleInterval[channel] = chanData->voltage.interval;
             changes = true;
         }
