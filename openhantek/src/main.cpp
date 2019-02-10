@@ -33,6 +33,7 @@
 #include "exporting/exporterregistry.h"
 #include "exporting/exportimage.h"
 #include "exporting/exportprint.h"
+#include "exporting/exporttcp.h"
 
 // GUI
 #include "iconfont/QtAwesome.h"
@@ -92,6 +93,8 @@ int main(int argc, char *argv[]) {
 #endif
 
     bool useGles = false;
+    bool startTcpServer = false;
+    int tcpServerPort = -1;
     {
         QCoreApplication parserApp(argc, argv);
         QCommandLineParser p;
@@ -99,8 +102,15 @@ int main(int argc, char *argv[]) {
         p.addVersionOption();
         QCommandLineOption useGlesOption("useGLES", QCoreApplication::tr("Use OpenGL ES instead of OpenGL"));
         p.addOption(useGlesOption);
+
+        QCommandLineOption startTcpServerOption({"p", "listen"}, QCoreApplication::tr("Start TCP export server on port 4269"), "port");
+        p.addOption(startTcpServerOption);
+
         p.process(parserApp);
         useGles = p.isSet(useGlesOption);
+        startTcpServer = p.isSet(startTcpServerOption);
+
+        tcpServerPort = p.value(startTcpServerOption).toInt();
     }
 
     GlScope::fixOpenGLversion(useGles ? QSurfaceFormat::OpenGLES : QSurfaceFormat::OpenGL);
@@ -159,6 +169,18 @@ int main(int argc, char *argv[]) {
     exportRegistry.registerExporter(&exporterCSV);
     exportRegistry.registerExporter(&exportImage);
     exportRegistry.registerExporter(&exportPrint);
+
+
+    ExporterTcp exportTcp(1242);
+    exportRegistry.registerExporter(&exportTcp);
+    exportRegistry.setExporterEnabled(&exportTcp, true);
+
+//    if (startTcpServer)
+//    {
+//        ExporterTcp* exportTcp = new ExporterTcp(tcpServerPort);
+//        exportRegistry.registerExporter(exportTcp);
+//        exportRegistry.setExporterEnabled(exportTcp, true);
+//    }
 
     //////// Create post processing objects ////////
     QThread postProcessingThread;

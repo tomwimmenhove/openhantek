@@ -8,6 +8,7 @@ class ExporterPrint : public ExporterInterface
 public:
     ExporterPrint();
     virtual void create(ExporterRegistry *registry) override;
+    virtual bool show() override;
     virtual QIcon icon() override;
     virtual QString name() override;
     virtual Type type() override;

@@ -27,6 +27,11 @@ public:
     virtual void create(ExporterRegistry *registry) = 0;
 
     /**
+     * @return Return if this exporter should be shown in the GUI's menu.
+     */
+    virtual bool show() = 0;
+
+    /**
      * @return Return the icon representation of this exporter. Will be used in graphical
      * interfaces.
      */

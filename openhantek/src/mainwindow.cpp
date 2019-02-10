@@ -53,13 +53,16 @@ MainWindow::MainWindow(HantekDsoControl *dsoControl, DsoSettings *settings, Expo
 #endif
 
     for (auto *exporter : *exporterRegistry) {
-        QAction *action = new QAction(exporter->icon(), exporter->name(), this);
-        action->setCheckable(exporter->type() == ExporterInterface::Type::ContinousExport);
-        connect(action, &QAction::triggered, [exporter, exporterRegistry](bool checked) {
-            exporterRegistry->setExporterEnabled(
-                exporter, exporter->type() == ExporterInterface::Type::ContinousExport ? checked : true);
-        });
-        ui->menuExport->addAction(action);
+        if (exporter->show())
+        {
+            QAction *action = new QAction(exporter->icon(), exporter->name(), this);
+            action->setCheckable(exporter->type() == ExporterInterface::Type::ContinousExport);
+            connect(action, &QAction::triggered, [exporter, exporterRegistry](bool checked) {
+                exporterRegistry->setExporterEnabled(
+                            exporter, exporter->type() == ExporterInterface::Type::ContinousExport ? checked : true);
+            });
+            ui->menuExport->addAction(action);
+        }
     }
 
     DsoSettingsScope *scope = &(mSettings->scope);

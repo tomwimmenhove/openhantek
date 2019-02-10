@@ -15,6 +15,8 @@ ExporterCSV::ExporterCSV() {}
 
 void ExporterCSV::create(ExporterRegistry *registry) { this->registry = registry; data.reset(); }
 
+bool ExporterCSV::show() { return true; }
+
 QIcon ExporterCSV::icon() { return iconFont->icon(fa::filetexto); }
 
 QString ExporterCSV::name() { return QCoreApplication::tr("Export CSV"); }

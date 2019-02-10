@@ -16,6 +16,8 @@ ExporterImage::ExporterImage() {}
 
 void ExporterImage::create(ExporterRegistry *registry) { this->registry = registry; data.reset(); }
 
+bool ExporterImage::show() { return true; }
+
 QIcon ExporterImage::icon() { return iconFont->icon(fa::image); }
 
 QString ExporterImage::name() { return QCoreApplication::tr("Export Image/PDF"); }
