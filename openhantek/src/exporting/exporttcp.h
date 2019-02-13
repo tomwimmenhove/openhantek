@@ -12,7 +12,7 @@ class ExporterTcp : public QObject, public ExporterInterface
     Q_OBJECT
 
 public:
-    ExporterTcp(int port);
+    ExporterTcp(int port, bool binary);
     virtual void create(ExporterRegistry *registry) override;
     virtual bool show() override;
     virtual QIcon icon() override;
@@ -31,9 +31,12 @@ signals:
     void newData(QTcpSocket* connection, QByteArray data);
 
 private:
+    QByteArray writeAsTextByteArray(const std::shared_ptr<PPresult>data);
+    QByteArray writeAsBinaryByteArray(const std::shared_ptr<PPresult>data);
     bool changes(const std::shared_ptr<PPresult> data);
 
 private:
+    bool binary;
     QTcpServer *tcpServer = nullptr;
     QNetworkSession *networkSession = nullptr;
     QList<QTcpSocket*> connections;

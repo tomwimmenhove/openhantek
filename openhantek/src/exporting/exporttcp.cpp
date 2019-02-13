@@ -11,7 +11,7 @@
 #include <QApplication>
 #include <QDateTime>
 
-ExporterTcp::ExporterTcp(int port) {
+ExporterTcp::ExporterTcp(int port, bool binary) : binary(binary) {
     tcpServer = new QTcpServer();
 
     if (!tcpServer->listen(QHostAddress::Any, port)) {
@@ -34,48 +34,16 @@ QString ExporterTcp::name() { return QCoreApplication::tr("Export TCP"); }
 ExporterInterface::Type ExporterTcp::type() { return Type::SnapshotExport; }
 
 bool ExporterTcp::samples(const std::shared_ptr<PPresult> data) {
+    QByteArray block;
+
+    if (binary) {
+        block = writeAsBinaryByteArray(data);
+    }
+    else {
+        block = writeAsTextByteArray(data);
+    }
+
     for(QTcpSocket* connection: connections) {
-        QByteArray block;
-        QTextStream out(&block, QIODevice::WriteOnly);
-
-        if (changes(data)) {
-            out << "#timestamp,";
-
-            for (ChannelID channel = 0; channel < data->channelCount(); channel++) {
-                size_t numChanSamps = data->data(channel)->voltage.sample.size();
-                if (!numChanSamps) continue;
-                QString chanName = registry->settings->scope.voltage[channel].name;
-
-                out << chanName
-                    << " sample rate,"
-                    << "<"
-                    << numChanSamps
-                    << ' '
-                    << chanName
-                    << " samples>,";
-            }
-
-            out << '\n';
-        }
-
-        qint64 timestamp_ms = QDateTime::currentDateTime().toMSecsSinceEpoch();
-        out << (timestamp_ms / 1000) << '.'
-            << QString("%1").arg((timestamp_ms % 1000), 3, 10, QChar('0')) << ',';
-
-        for (ChannelID channel = 0; channel < data->channelCount(); channel++) {
-            const DataChannel* chanData = data->data(channel);
-            size_t numChanSamps = chanData->voltage.sample.size();
-            if (!numChanSamps) continue;
-
-            out << (1.0 / chanData->voltage.interval) << ',';
-            for (size_t sample = 0; sample < numChanSamps ; sample++) {
-                out << chanData->voltage.sample[sample] << ',';
-            }
-        }
-        out << '\n';
-
-        out.flush();
-
         emit newData(connection, block);
     }
 
@@ -87,6 +55,97 @@ void ExporterTcp::onNewData(QTcpSocket* connection, QByteArray data)
     if (connection->isWritable()) {
         connection->write(data);
     }
+}
+
+/* ---------- Binary frame format ----------
+ * Timestamp (ms since epoch)   : 64 bit integer
+ * Number of channels           : 32 bit integer
+ * For each channel:
+ *  Sample rate                 : 32 bit float
+ *  Number of samples           : 32 bit int
+ *  Samples                     : 32 bit floats
+ *
+ */
+QByteArray ExporterTcp::writeAsBinaryByteArray(const std::shared_ptr<PPresult> data)
+{
+    QByteArray block;
+    QDataStream out(&block, QIODevice::WriteOnly);
+
+    out.setFloatingPointPrecision(QDataStream::SinglePrecision);
+
+    quint32 nChan = 0;
+    for (ChannelID channel = 0; channel < data->channelCount(); channel++) {
+        if (data->data(channel)->voltage.sample.size()) {
+            nChan++;
+        }
+    }
+
+    qint64 timestamp_ms = QDateTime::currentDateTime().toMSecsSinceEpoch();
+
+    // Timestamp and number of channels
+    out << timestamp_ms << nChan;
+
+    for (ChannelID channel = 0; channel < data->channelCount(); channel++) {
+        const DataChannel* chanData = data->data(channel);
+        size_t numChanSamps = chanData->voltage.sample.size();
+        if (!numChanSamps) continue;
+
+        // Sample rate and number of samples
+        out << (1.0 / chanData->voltage.interval) << ((quint32) numChanSamps);
+
+        // Samples
+        for (size_t sample = 0; sample < numChanSamps ; sample++) {
+            out << chanData->voltage.sample[sample];
+        }
+    }
+
+    return block;
+}
+
+QByteArray ExporterTcp::writeAsTextByteArray(const std::shared_ptr<PPresult> data)
+{
+    QByteArray block;
+    QTextStream out(&block, QIODevice::WriteOnly);
+
+    if (changes(data)) {
+        out << "#timestamp,";
+
+        for (ChannelID channel = 0; channel < data->channelCount(); channel++) {
+            size_t numChanSamps = data->data(channel)->voltage.sample.size();
+            if (!numChanSamps) continue;
+            QString chanName = registry->settings->scope.voltage[channel].name;
+
+            out << chanName
+                << " sample rate,"
+                << "<"
+                << numChanSamps
+                << ' '
+                << chanName
+                << " samples>,";
+        }
+
+        out << '\n';
+    }
+
+    qint64 timestamp_ms = QDateTime::currentDateTime().toMSecsSinceEpoch();
+    out << (timestamp_ms / 1000) << '.'
+        << QString("%1").arg((timestamp_ms % 1000), 3, 10, QChar('0')) << ',';
+
+    for (ChannelID channel = 0; channel < data->channelCount(); channel++) {
+        const DataChannel* chanData = data->data(channel);
+        size_t numChanSamps = chanData->voltage.sample.size();
+        if (!numChanSamps) continue;
+
+        out << (1.0 / chanData->voltage.interval) << ',';
+        for (size_t sample = 0; sample < numChanSamps ; sample++) {
+            out << chanData->voltage.sample[sample] << ',';
+        }
+    }
+    out << '\n';
+
+    out.flush();
+
+    return block;
 }
 
 bool ExporterTcp::changes(const std::shared_ptr<PPresult> data)

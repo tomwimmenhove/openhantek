@@ -96,6 +96,7 @@ int main(int argc, char *argv[]) {
     bool startTcpServer = false;
     int tcpServerPort = -1;
     bool useFirst = false;
+    bool tcpBinaryProt = false;
     {
         QCoreApplication parserApp(argc, argv);
         QCommandLineParser p;
@@ -104,8 +105,11 @@ int main(int argc, char *argv[]) {
         QCommandLineOption useGlesOption("useGLES", QCoreApplication::tr("Use OpenGL ES instead of OpenGL"));
         p.addOption(useGlesOption);
 
-        QCommandLineOption startTcpServerOption({"p", "listen"}, QCoreApplication::tr("Start TCP export server on port 4269"), "port");
+        QCommandLineOption startTcpServerOption({"p", "listen"}, QCoreApplication::tr("Start TCP export server on the given port"), "port");
         p.addOption(startTcpServerOption);
+
+        QCommandLineOption tcpBinaryProtOption({"b", "binprot"}, QCoreApplication::tr("Use a binary protocol for the TCP export server"));
+        p.addOption(tcpBinaryProtOption);
 
         QCommandLineOption useFirstOption({"f", "usefirst"}, QCoreApplication::tr("Use the first device found. Don't show the device selection dialog."));
         p.addOption(useFirstOption);
@@ -115,6 +119,7 @@ int main(int argc, char *argv[]) {
         startTcpServer = p.isSet(startTcpServerOption);
         tcpServerPort = p.value(startTcpServerOption).toInt();
         useFirst = p.isSet(useFirstOption);
+        tcpBinaryProt = p.isSet(tcpBinaryProtOption);
     }
 
     GlScope::fixOpenGLversion(useGles ? QSurfaceFormat::OpenGLES : QSurfaceFormat::OpenGL);
@@ -182,7 +187,7 @@ int main(int argc, char *argv[]) {
     exportRegistry.registerExporter(&exportPrint);
 
     if (startTcpServer) {
-        ExporterTcp* exportTcp = new ExporterTcp(tcpServerPort);
+        ExporterTcp* exportTcp = new ExporterTcp(tcpServerPort, tcpBinaryProt);
         exportRegistry.registerExporter(exportTcp);
         exportRegistry.setExporterEnabled(exportTcp, true);
     }
